@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Basket Pro & DealHub - E-Commerce & Knapsack Optimizer</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        @keyframes highlightPulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+            50% { transform: scale(1.02); box-shadow: 0 0 0 8px rgba(79, 70, 229, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+
+        .dp-highlight {
+            animation: highlightPulse 1.5s infinite;
+        }
+
+        .dp-cell {
+            transition: all 0.2s ease;
+        }
+        .dp-cell:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        .tab-btn.active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+            background-color: #f8fafc;
+        }
+
+        .mic-listening {
+            animation: micPulse 1.2s infinite;
+        }
+
+        @keyframes micPulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+            70% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Top Announcement Banner -->
+    <div class="bg-gradient-to-r from-indigo-700 via-indigo-600 to-purple-700 text-white text-xs font-semibold py-1.5 px-4 text-center flex items-center justify-center gap-3">
+        <span class="bg-amber-400 text-slate-900 font-extrabold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">Flash Sale</span>
+        <span>🔥 Use Code <strong class="underline decoration-amber-300">KNAPSACK15</strong> for Extra 15% Off | Free Delivery Nationwide!</span>
+        <button onclick="copyCoupon('KNAPSACK15')" class="ml-2 underline hover:text-amber-300 font-bold text-[11px]">Copy Code</button>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-xl border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between py-3.5 gap-4">
+                
+                <!-- Brand & Logo -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('catalog')">
+                    <div class="p-2.5 bg-gradient-to-tr from-indigo-600 to-indigo-400 border border-indigo-400/40 rounded-xl text-white shadow-lg">
+                        <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent flex items-center gap-1.5">
+                            Smart Basket <span class="text-xs px-2 py-0.5 bg-indigo-500/30 text-indigo-300 rounded-md border border-indigo-400/30 font-semibold hidden sm:inline">DealHub</span>
+                        </h1>
+                        <p class="text-[11px] text-slate-400 hidden sm:block">AI Basket Optimizer & E-Commerce Superstore</p>
+                    </div>
+                </div>
+
+                <!-- Location Selector Widget -->
+                <div class="hidden lg:flex items-center gap-2 bg-slate-800/80 border border-slate-700/70 rounded-xl px-3 py-1.5 text-xs text-slate-300">
+                    <i data-lucide="map-pin" class="w-4 h-4 text-indigo-400 shrink-0"></i>
+                    <div class="text-left max-w-[180px]">
+                        <span class="block text-[10px] text-slate-400 uppercase font-semibold">Deliver To:</span>
+                        <span id="headerLocationText" class="font-bold text-slate-200 truncate block">Detecting location...</span>
+                    </div>
+                    <button onclick="getGeoLocation()" class="p-1 hover:bg-slate-700 rounded-lg text-indigo-300 transition-colors" title="Use current location">
+                        <i data-lucide="locate-fixed" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Action Toolbar Header Badges -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <!-- Voice Command Trigger -->
+                    <button id="voiceSearchBtn" onclick="toggleVoiceAssistant()" class="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 rounded-xl text-slate-200 transition-all relative group" title="Voice Search Assistant">
+                        <i data-lucide="mic" class="w-5 h-5 text-amber-400"></i>
+                        <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap border border-slate-700">Voice Assistant</span>
+                    </button>
+
+                    <!-- Add Custom Product Modal Trigger -->
+                    <button onclick="toggleModal('add-product-modal')" class="hidden sm:inline-flex items-center px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm transition-all duration-200">
+                        <i data-lucide="plus" class="w-4 h-4 mr-1"></i>
+                        Add Item
+                    </button>
+
+                    <!-- Cart Header Badge Button -->
+                    <button onclick="switchTab('cart')" class="relative p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 rounded-xl text-slate-200 transition-all">
+                        <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                        <span id="headerCartBadge" class="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900">0</span>
+                    </button>
+
+                    <!-- Wishlist Header Badge Button -->
+                    <button onclick="switchTab('wishlist')" class="relative p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 rounded-xl text-slate-200 transition-all">
+                        <i data-lucide="heart" class="w-5 h-5 text-rose-400"></i>
+                        <span id="headerWishlistBadge" class="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900">0</span>
+                    </button>
+
+                    <button onclick="resetData()" class="p-2.5 sm:px-3 sm:py-2.5 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all" title="Reset Catalog Data">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs Bar -->
+            <nav class="flex space-x-1 sm:space-x-4 pt-1 overflow-x-auto custom-scrollbar">
+                <button onclick="switchTab('catalog')" id="tab-btn-catalog" class="tab-btn active px-4 py-2.5 text-xs font-bold border-b-2 border-transparent transition-all flex items-center gap-2 whitespace-nowrap text-slate-300 hover:text-white">
+                    <i data-lucide="grid" class="w-4 h-4"></i> Catalog (<span id="tabCatalogCount">0</span>)
+                </button>
+                <button onclick="switchTab('deals')" id="tab-btn-deals" class="tab-btn px-4 py-2.5 text-xs font-bold border-b-2 border-transparent transition-all flex items-center gap-2 whitespace-nowrap text-slate-300 hover:text-white">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i> Daily Deals Hub
+                </button>
+                <button onclick="switchTab('optimizer')" id="tab-btn-optimizer" class="tab-btn px-4 py-2.5 text-xs font-bold border-b-2 border-transparent transition-all flex items-center gap-2 whitespace-nowrap text-slate-300 hover:text-white">
+                    <i data-lucide="zap" class="w-4 h-4 text-indigo-400"></i> Smart Optimizer
+                </button>
+                <button onclick="switchTab('cart')" id="tab-btn-cart" class="tab-btn px-4 py-2.5 text-xs font-bold border-b-2 border-transparent transition-all flex items-center gap-2 whitespace-nowrap text-slate-300 hover:text-white">
+                    <i data-lucide="shopping-cart" class="w-4 h-4 text-emerald-400"></i> My Cart (<span id="tabCartCount">0</span>)
+                </button>
+                <button onclick="switchTab('wishlist')" id="tab-btn-wishlist" class="tab-btn px-4 py-2.5 text-xs font-bold border-b-2 border-transparent transition-all flex items-center gap-2 whitespace-nowrap text-slate-300 hover:text-white">
+                    <i data-lucide="heart" class="w-4 h-4 text-rose-400"></i> Wishlist (<span id="tabWishlistCount">0</span>)
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Voice Listening Feedback Bar -->
+    <div id="voiceFeedbackBar" class="hidden bg-slate-900 border-b border-indigo-500/30 text-slate-200 py-2.5 px-4 text-xs">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="w-3 h-3 bg-rose-500 rounded-full animate-ping"></span>
+                <span class="font-bold text-amber-300">Voice Assistant Active:</span>
+                <span id="voiceStatusText" class="italic text-slate-300">Listening... Speak now (e.g. "Show laptops", "Optimize budget 50000")</span>
+            </div>
+            <button onclick="stopVoiceAssistant()" class="text-slate-400 hover:text-white text-xs font-bold">Cancel</button>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-6">
+
+        <!-- ==================== TAB 1: CATALOG ==================== -->
+        <section id="tab-content-catalog" class="tab-content space-y-6">
+            <!-- Location & Address Bar on Mobile -->
+            <div class="lg:hidden bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2 truncate">
+                    <i data-lucide="map-pin" class="w-4 h-4 text-indigo-600 shrink-0"></i>
+                    <span id="mobileLocationText" class="truncate text-slate-700 font-medium">Detecting location...</span>
+                </div>
+                <button onclick="getGeoLocation()" class="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-lg font-bold text-[11px]">Locate</button>
+            </div>
+
+            <!-- Hero Deal Banner Carousel -->
+            <div class="relative bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-900 rounded-2xl p-6 text-white shadow-xl overflow-hidden border border-slate-800">
+                <div class="relative z-10 max-w-2xl space-y-3">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Smart Shopping Experience
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
+                        Optimize Your Basket with Dynamic 0/1 Knapsack AI
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        Specify your budget target and let our mathematical optimizer extract the highest aggregate utility score from over 30+ premium gadgets!
+                    </p>
+                    <div class="flex flex-wrap items-center gap-3 pt-1">
+                        <button onclick="switchTab('optimizer')" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg transition-all flex items-center gap-1.5">
+                            <i data-lucide="zap" class="w-4 h-4 text-amber-300"></i> Try Optimizer
+                        </button>
+                        <button onclick="switchTab('deals')" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-700 transition-all flex items-center gap-1.5">
+                            <i data-lucide="tag" class="w-4 h-4 text-emerald-400"></i> View Promo Codes
+                        </button>
+                    </div>
+                </div>
+                <div class="absolute -right-10 -bottom-10 opacity-15 pointer-events-none">
+                    <i data-lucide="cpu" class="w-80 h-80 text-indigo-400"></i>
+                </div>
+            </div>
+
+            <!-- Catalog Controls & Filters -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm space-y-4">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="package" class="w-5 h-5 text-indigo-600"></i>
+                            Product Superstore Catalog
+                        </h2>
+                        <p class="text-xs text-slate-500">Explore items, add to wishlist, or batch send into cart and optimizer pool.</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="batchAction('cart')" class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5">
+                            <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i> Add Selected to Cart
+                        </button>
+                        <button onclick="batchAction('wishlist')" class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5">
+                            <i data-lucide="heart" class="w-3.5 h-3.5"></i> Add Selected to Wishlist
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter Controls Bar -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2 border-t border-slate-100">
+                    <div class="relative">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+                        <input type="text" id="searchInput" oninput="filterProducts()" placeholder="Search gadgets or voice search..." 
+                            class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium">
+                    </div>
+
+                    <div>
+                        <select id="categoryFilter" onchange="filterProducts()" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-slate-700">
+                            <option value="all">All Categories (30+)</option>
+                            <option value="Laptops">Laptops & Computers</option>
+                            <option value="Smartphones">Smartphones & Tablets</option>
+                            <option value="Audio">Audio & Headphones</option>
+                            <option value="Wearables">Wearables & Watches</option>
+                            <option value="Gaming">Gaming & Consoles</option>
+                            <option value="Cameras">Cameras & Drones</option>
+                            <option value="Smart Home">Smart Home & Appliances</option>
+                            <option value="Accessories">Monitors & Accessories</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <select id="sortCatalogSelect" onchange="filterProducts()" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-slate-700">
+                            <option value="default">Sort: Recommended</option>
+                            <option value="priceLow">Price: Low to High</option>
+                            <option value="priceHigh">Price: High to Low</option>
+                            <option value="ratingHigh">Rating: Highest First</option>
+                            <option value="discountHigh">Discount: Highest First</option>
+                            <option value="valueHigh">Value Score: High to Low</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center justify-between px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                        <span class="text-xs font-semibold text-slate-600">Select All Items:</span>
+                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Grid Container -->
+            <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                <!-- Dynamically populated via JS -->
+            </div>
+        </section>
+
+        <!-- ==================== TAB 2: DAILY DEALS & COUPONS ==================== -->
+        <section id="tab-content-deals" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="flame" class="w-5 h-5 text-amber-500"></i>
+                            Flash Sale & Discount Coupon Hub
+                        </h2>
+                        <p class="text-xs text-slate-500">Active promo codes and limited-time price drops.</p>
+                    </div>
+
+                    <div class="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-1.5 rounded-xl font-bold flex items-center gap-2">
+                        <i data-lucide="clock" class="w-4 h-4 text-amber-600 animate-spin"></i>
+                        <span>Flash Sale Ends in: <span id="dealTimer">04:32:19</span></span>
+                    </div>
+                </div>
+
+                <!-- Promo Code Coupons Grid -->
+                <div>
+                    <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-3">Available Promo Coupons</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-gradient-to-br from-indigo-50 to-indigo-100/50 border border-indigo-200 rounded-2xl p-4 flex flex-col justify-between space-y-3">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-[10px] font-bold text-indigo-600 bg-indigo-200/60 px-2 py-0.5 rounded">15% OFF</span>
+                                    <h4 class="font-extrabold text-sm text-slate-900 mt-1">KNAPSACK15</h4>
+                                    <p class="text-xs text-slate-600">Get 15% instant discount on orders above ₹10,000.</p>
+                                </div>
+                            </div>
+                            <button onclick="copyCoupon('KNAPSACK15')" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all">Copy Code</button>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200 rounded-2xl p-4 flex flex-col justify-between space-y-3">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-[10px] font-bold text-emerald-600 bg-emerald-200/60 px-2 py-0.5 rounded">₹2000 OFF</span>
+                                    <h4 class="font-extrabold text-sm text-slate-900 mt-1">FESTIVE20</h4>
+                                    <p class="text-xs text-slate-600">Flat ₹2,000 discount on flagship laptops & tech.</p>
+                                </div>
+                            </div>
+                            <button onclick="copyCoupon('FESTIVE20')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all">Copy Code</button>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-200 rounded-2xl p-4 flex flex-col justify-between space-y-3">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-[10px] font-bold text-purple-600 bg-purple-200/60 px-2 py-0.5 rounded">10% OFF</span>
+                                    <h4 class="font-extrabold text-sm text-slate-900 mt-1">SUPERDEAL10</h4>
+                                    <p class="text-xs text-slate-600">10% off site-wide on any item in your basket.</p>
+                                </div>
+                            </div>
+                            <button onclick="copyCoupon('SUPERDEAL10')" class="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all">Copy Code</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flash Deals List -->
+                <div>
+                    <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-3">Today's Highest Discount Items</h3>
+                    <div id="flashDealsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 3: SMART OPTIMIZER ==================== -->
+        <section id="tab-content-optimizer" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Inputs & Strategy -->
+                    <div class="lg:col-span-8 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <i data-lucide="sliders" class="w-5 h-5 text-indigo-600"></i>
+                                Knapsack Algorithm Configuration
+                            </h2>
+                            <span class="text-xs bg-indigo-100 text-indigo-800 font-bold px-2.5 py-1 rounded-full">0/1 Dynamic Programming</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1.5">Target Budget Limit (₹)</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-2.5 text-slate-400 text-sm font-semibold">₹</span>
+                                    <input type="number" id="budgetInput" value="50000" min="500" step="500" 
+                                        class="w-full pl-8 pr-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-semibold text-slate-900">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1.5">Optimization Objective</label>
+                                <select id="strategySelect" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800">
+                                    <option value="value">Maximize Value Score</option>
+                                    <option value="rating">Maximize Rating Score</option>
+                                    <option value="quantity">Maximize Item Quantity</option>
+                                    <option value="bangForBuck">Maximize Value / Price Ratio</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1.5">Candidate Item Pool</label>
+                                <select id="scopeSelect" class="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-slate-800">
+                                    <option value="all">Entire Catalog (30+ Items)</option>
+                                    <option value="wishlist">Wishlist Items Only</option>
+                                    <option value="selected">Selected Checkboxes Only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Presets -->
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1.5">Quick Budget Presets</span>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="setBudget(15000)" class="px-3 py-1 text-xs bg-slate-100 hover:bg-indigo-600 hover:text-white rounded-lg font-medium transition-all">₹15,000</button>
+                                <button onclick="setBudget(35000)" class="px-3 py-1 text-xs bg-slate-100 hover:bg-indigo-600 hover:text-white rounded-lg font-medium transition-all">₹35,000</button>
+                                <button onclick="setBudget(50000)" class="px-3 py-1 text-xs bg-slate-100 hover:bg-indigo-600 hover:text-white rounded-lg font-medium transition-all">₹50,000</button>
+                                <button onclick="setBudget(85000)" class="px-3 py-1 text-xs bg-slate-100 hover:bg-indigo-600 hover:text-white rounded-lg font-medium transition-all">₹85,000</button>
+                                <button onclick="setBudget(120000)" class="px-3 py-1 text-xs bg-slate-100 hover:bg-indigo-600 hover:text-white rounded-lg font-medium transition-all">₹1,20,000</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Banner -->
+                    <div class="lg:col-span-4 bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl p-5 text-white flex flex-col justify-between space-y-4">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 block mb-1">Knapsack Engine</span>
+                            <h3 class="text-base font-bold text-white mb-2">Automated Basket Maximizer</h3>
+                            <p class="text-xs text-indigo-200/80 leading-relaxed">Computes the mathematically optimal subset of products that fits strictly within your budget limit.</p>
+                        </div>
+
+                        <button onclick="optimizeShopping()" class="w-full py-3 px-4 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl font-bold shadow-lg hover:shadow-indigo-500/30 transition-all duration-200 flex items-center justify-center gap-2">
+                            <i data-lucide="zap" class="w-5 h-5 fill-current text-amber-300"></i>
+                            <span>Run Knapsack Optimizer</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optimization Results Container -->
+            <div id="resultsSection" class="hidden space-y-6">
+                <!-- Metrics -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Optimized Cost</div>
+                        <div id="metricCost" class="text-2xl font-extrabold text-slate-900">₹0</div>
+                        <div id="metricBudgetUsage" class="text-xs font-medium text-slate-500 mt-1">0% of target budget</div>
+                        <div class="absolute right-3 bottom-3 p-2 bg-indigo-50 rounded-xl text-indigo-600">
+                            <i data-lucide="wallet" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Captured Score</div>
+                        <div id="metricScore" class="text-2xl font-extrabold text-indigo-600">0</div>
+                        <div id="metricScoreType" class="text-xs font-medium text-slate-500 mt-1">Total Value units</div>
+                        <div class="absolute right-3 bottom-3 p-2 bg-indigo-50 rounded-xl text-indigo-600">
+                            <i data-lucide="award" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Items Included</div>
+                        <div id="metricItemsCount" class="text-2xl font-extrabold text-emerald-600">0</div>
+                        <div id="metricItemsTotal" class="text-xs font-medium text-slate-500 mt-1">Out of 0 products</div>
+                        <div class="absolute right-3 bottom-3 p-2 bg-emerald-50 rounded-xl text-emerald-600">
+                            <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Unused Budget</div>
+                        <div id="metricRemaining" class="text-2xl font-extrabold text-amber-600">₹0</div>
+                        <div class="text-xs font-medium text-emerald-600 mt-1 flex items-center gap-1">
+                            <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> Maximum Efficiency
+                        </div>
+                        <div class="absolute right-3 bottom-3 p-2 bg-amber-50 rounded-xl text-amber-600">
+                            <i data-lucide="piggy-bank" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Optimized Basket List & Budget Breakdown -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <i data-lucide="sparkles" class="w-5 h-5 text-amber-500"></i>
+                                Algorithm Choice: Optimal Shopping List
+                            </h3>
+                            <button onclick="addAllOptimizedToCart()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                                <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i> Push All to Cart
+                            </button>
+                        </div>
+
+                        <div id="selectedProductsContainer" class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
+                            <!-- Dynamic Optimized Item Cards -->
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900 mb-4">Budget Utilization Breakdown</h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between text-xs font-semibold mb-1">
+                                        <span class="text-slate-600">Budget Spent</span>
+                                        <span id="progressCostText" class="text-indigo-600">₹0</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                        <div id="costProgressBar" class="bg-indigo-600 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs font-semibold mb-1">
+                                        <span class="text-slate-600">Unspent Cushion</span>
+                                        <span id="progressRemText" class="text-amber-600">₹0</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                        <div id="remProgressBar" class="bg-amber-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                                    </div>
+                                </div>
+
+                                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+                                    <div class="flex justify-between text-slate-600">
+                                        <span>Pool Total Value:</span>
+                                        <span id="totalCatalogValue" class="font-bold text-slate-800">0</span>
+                                    </div>
+                                    <div class="flex justify-between text-slate-600">
+                                        <span>Captured Efficiency:</span>
+                                        <span id="capturedValue" class="font-bold text-emerald-600">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-slate-100">
+                            <button onclick="toggleDpMatrix()" class="w-full py-2.5 px-3 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-all flex items-center justify-center gap-2">
+                                <i data-lucide="grid" class="w-4 h-4 text-indigo-400"></i>
+                                <span id="toggleDpBtnText">Show Dynamic Programming Matrix</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Programming Matrix Visualizer -->
+                <div id="dpMatrixContainer" class="hidden bg-slate-900 text-white rounded-2xl p-6 shadow-2xl space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                        <div>
+                            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                <i data-lucide="cpu" class="w-5 h-5 text-indigo-400"></i>
+                                Dynamic Programming DP Matrix Visualizer
+                            </h3>
+                            <p class="text-xs text-slate-400">Step-by-step DP execution state with backtracking path highlighted</p>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs">
+                            <span class="inline-block w-3 h-3 bg-indigo-600 rounded"></span> Selected Backtracking Path
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <div id="dpMatrixTable" class="inline-block min-w-full align-middle">
+                            <!-- Dynamic DP Table populated via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 4: SHOPPING CART ==================== -->
+        <section id="tab-content-cart" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
+                <h2 class="text-lg font-bold text-slate-900 flex items-center justify-between border-b border-slate-100 pb-4">
+                    <span class="flex items-center gap-2">
+                        <i data-lucide="shopping-cart" class="w-5 h-5 text-indigo-600"></i>
+                        Interactive Shopping Cart
+                    </span>
+                    <button onclick="clearCart()" class="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Clear Cart
+                    </button>
+                </h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-6">
+                    <!-- Cart Items Table/List -->
+                    <div class="lg:col-span-8 space-y-4">
+                        <div id="cartItemsContainer" class="space-y-3">
+                            <!-- Cart item rows dynamically populated -->
+                        </div>
+                    </div>
+
+                    <!-- Cart Summary Sidebar -->
+                    <div class="lg:col-span-4 bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-5 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-900 border-b border-slate-200 pb-3">Order Summary</h3>
+                            
+                            <!-- Coupon Form -->
+                            <div class="mt-3 space-y-2">
+                                <label class="block text-xs font-semibold text-slate-600">Apply Promo Coupon</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="couponInput" placeholder="e.g. KNAPSACK15" class="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 uppercase font-mono">
+                                    <button onclick="applyCoupon()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all">Apply</button>
+                                </div>
+                                <div id="couponAppliedBadge" class="hidden text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                                    <i data-lucide="check" class="w-3.5 h-3.5"></i> Coupon Applied: <span id="activeCouponCode"></span>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2.5 text-xs mt-4 pt-3 border-t border-slate-200">
+                                <div class="flex justify-between text-slate-600">
+                                    <span>Subtotal</span>
+                                    <span id="cartSubtotal" class="font-bold text-slate-800">₹0</span>
+                                </div>
+                                <div id="cartDiscountRow" class="hidden flex justify-between text-emerald-600 font-semibold">
+                                    <span>Promo Discount</span>
+                                    <span id="cartDiscountAmount">-₹0</span>
+                                </div>
+                                <div class="flex justify-between text-slate-600">
+                                    <span>Estimated GST (18%)</span>
+                                    <span id="cartTax" class="font-semibold text-slate-700">₹0</span>
+                                </div>
+                                <div class="flex justify-between text-slate-600">
+                                    <span>Delivery Charge</span>
+                                    <span class="font-semibold text-emerald-600">FREE</span>
+                                </div>
+                                <div class="border-t border-slate-200 pt-3 flex justify-between text-sm font-extrabold text-slate-900">
+                                    <span>Grand Total</span>
+                                    <span id="cartTotal" class="text-indigo-600">₹0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 pt-4 border-t border-slate-200">
+                            <button onclick="switchTab('optimizer')" class="w-full py-2.5 px-4 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
+                                <i data-lucide="zap" class="w-4 h-4"></i> Optimize Cart with Budget
+                            </button>
+                            <button onclick="openCheckoutModal()" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2">
+                                <i data-lucide="credit-card" class="w-4 h-4"></i> Proceed to Checkout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 5: WISHLIST ==================== -->
+        <section id="tab-content-wishlist" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="heart" class="w-5 h-5 text-rose-500 fill-rose-500"></i>
+                            Your Bookmarked Wishlist
+                        </h2>
+                        <p class="text-xs text-slate-500">Save items here or send them directly into your cart or optimizer candidate pool.</p>
+                    </div>
+
+                    <button onclick="moveWishlistToCart()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                        <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i> Move All to Cart
+                    </button>
+                </div>
+
+                <div id="wishlistContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                    <!-- Dynamic Wishlist Cards -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal 1: Quick View Product Modal -->
+    <div id="quickview-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 relative">
+            <button onclick="toggleModal('quickview-modal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div id="quickviewContent" class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Populated via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Multi-step Checkout & UPI QR Payment Modal -->
+    <div id="checkout-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 my-8">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="shield-check" class="w-5 h-5 text-indigo-600"></i>
+                    Secure Checkout & Payment Gateway
+                </h3>
+                <button onclick="toggleModal('checkout-modal')" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Checkout Form & Steps -->
+            <div id="checkoutFormStep" class="space-y-4">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                    <span class="font-bold text-slate-700 block mb-1">Delivery Address:</span>
+                    <p id="checkoutAddressText" class="text-slate-600">Detecting address...</p>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <label class="block font-bold text-slate-800">Select Payment Method</label>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex items-center gap-2.5 p-3 border border-indigo-500 bg-indigo-50/50 rounded-xl cursor-pointer">
+                            <input type="radio" name="paymentMethod" value="upi" checked class="text-indigo-600">
+                            <div>
+                                <span class="font-bold text-slate-900 block">UPI / QR Code</span>
+                                <span class="text-[10px] text-slate-500">GPay, PhonePe, Paytm</span>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center gap-2.5 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50">
+                            <input type="radio" name="paymentMethod" value="card" class="text-indigo-600">
+                            <div>
+                                <span class="font-bold text-slate-900 block">Credit / Debit Card</span>
+                                <span class="text-[10px] text-slate-500">Visa, Mastercard, RuPay</span>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center gap-2.5 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50">
+                            <input type="radio" name="paymentMethod" value="netbanking" class="text-indigo-600">
+                            <div>
+                                <span class="font-bold text-slate-900 block">Net Banking</span>
+                                <span class="text-[10px] text-slate-500">All Major Banks</span>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center gap-2.5 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50">
+                            <input type="radio" name="paymentMethod" value="cod" class="text-indigo-600">
+                            <div>
+                                <span class="font-bold text-slate-900 block">Cash On Delivery</span>
+                                <span class="text-[10px] text-slate-500">Pay at doorstep</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100 pt-3 flex items-center justify-between">
+                    <div>
+                        <span class="text-xs text-slate-500 block">Total Payable:</span>
+                        <span id="checkoutPayableAmount" class="text-lg font-extrabold text-indigo-600">₹0</span>
+                    </div>
+                    <button onclick="processPaymentStep()" class="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2">
+                        <span>Pay & Confirm</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dynamic UPI QR Scanner Screen (Initially Hidden) -->
+            <div id="upiQrScreen" class="hidden text-center space-y-4 py-2">
+                <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-xl text-xs">
+                    <span class="font-bold text-indigo-900 block">Scan UPI QR Code to Pay</span>
+                    <span class="text-slate-600">Merchant UPI ID: <strong class="font-mono text-indigo-600">smartbasket@upi</strong></span>
+                </div>
+
+                <div class="flex flex-col items-center justify-center space-y-2">
+                    <div class="p-4 bg-white border-2 border-indigo-500 rounded-2xl shadow-md inline-block">
+                        <img id="upiQrImg" src="" alt="UPI Payment QR Code" class="w-48 h-48 mx-auto">
+                    </div>
+                    <p id="qrAmountText" class="text-base font-black text-slate-900">Pay ₹0</p>
+                    <p class="text-[11px] text-slate-500">Scan with GPay, PhonePe, Paytm or BHIM app</p>
+                </div>
+
+                <div id="paymentSimStatus" class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-semibold flex items-center justify-center gap-2">
+                    <i data-lucide="loader-2" class="w-4 h-4 text-amber-600 animate-spin"></i>
+                    <span>Awaiting Payment Scan Verification...</span>
+                </div>
+
+                <button onclick="simulateSuccessfulPayment()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all shadow-md">
+                    Simulate Successful Payment Received
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Add Custom Product -->
+    <div id="add-product-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-600"></i>
+                    Add Custom Product to Store
+                </h3>
+                <button onclick="toggleModal('add-product-modal')" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="addProductForm" onsubmit="handleAddProduct(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Product Title</label>
+                    <input type="text" id="newProdName" required placeholder="e.g. Wireless Mechanical Keyboard" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Price (₹)</label>
+                        <input type="number" id="newProdPrice" required min="1" placeholder="4500" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Value Score (1-100)</label>
+                        <input type="number" id="newProdValue" required min="1" max="100" placeholder="85" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Rating (1.0 - 5.0)</label>
+                        <input type="number" id="newProdRating" required step="0.1" min="1" max="5" placeholder="4.6" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Category</label>
+                        <select id="newProdCategory" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500">
+                            <option value="Laptops">Laptops</option>
+                            <option value="Smartphones">Smartphones</option>
+                            <option value="Audio">Audio</option>
+                            <option value="Wearables">Wearables</option>
+                            <option value="Gaming">Gaming</option>
+                            <option value="Cameras">Cameras</option>
+                            <option value="Smart Home">Smart Home</option>
+                            <option value="Accessories">Accessories</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Image URL (Unsplash direct link)</label>
+                    <input type="url" id="newProdImg" placeholder="https://images.unsplash.com/photo-..." class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="toggleModal('add-product-modal')" class="px-4 py-2 border border-slate-300 rounded-xl font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast Box -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-800 hidden flex items-center gap-3 z-50 text-xs transition-all">
+        <i data-lucide="info" class="w-4 h-4 text-indigo-400"></i>
+        <span id="toastMsg">Notification message</span>
+    </div>
+
+    <script>
+        // Default Expanded Product Catalog Data (30+ rich items with Unsplash photography)
+        const defaultProducts = [
+            { id: 1, name: "MacBook Pro M3 Max 16\"", price: 249900, origPrice: 269900, discount: 7, value: 98, rating: 4.9, category: "Laptops", inStock: true, image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=500&q=80", features: ["M3 Max Chip", "36GB RAM", "1TB SSD"] },
+            { id: 2, name: "Dell XPS 15 OLED Touch", price: 110000, origPrice: 125000, discount: 12, value: 94, rating: 4.7, category: "Laptops", inStock: true, image: "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?auto=format&fit=crop&w=500&q=80", features: ["3.5K OLED Screen", "i9 Processor", "RTX 4060"] },
+            { id: 3, name: "ASUS ROG Zephyrus G16", price: 145000, origPrice: 165000, discount: 12, value: 93, rating: 4.8, category: "Laptops", inStock: true, image: "https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=500&q=80", features: ["240Hz OLED", "RTX 4070", "2.1kg Ultra-slim"] },
+            { id: 4, name: "iPhone 15 Pro Max 256GB", price: 139900, origPrice: 149900, discount: 6, value: 96, rating: 4.9, category: "Smartphones", inStock: true, image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=500&q=80", features: ["A17 Pro", "Titanium Frame", "5x Telephoto"] },
+            { id: 5, name: "Samsung Galaxy S24 Ultra", price: 129999, origPrice: 139999, discount: 7, value: 95, rating: 4.8, category: "Smartphones", inStock: true, image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=500&q=80", features: ["Galaxy AI", "200MP Camera", "Built-in S-Pen"] },
+            { id: 6, name: "Google Pixel 8 Pro", price: 79999, origPrice: 93999, discount: 15, value: 90, rating: 4.6, category: "Smartphones", inStock: true, image: "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=500&q=80", features: ["Tensor G3", "Pro Controls", "7 Yrs Updates"] },
+            { id: 7, name: "Sony WH-1000XM5 ANC", price: 29990, origPrice: 34990, discount: 14, value: 95, rating: 4.8, category: "Audio", inStock: true, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=500&q=80", features: ["Industry-leading ANC", "30-hr Battery", "Speak-to-Chat"] },
+            { id: 8, name: "Apple AirPods Pro 2 USB-C", price: 24900, origPrice: 26900, discount: 7, value: 91, rating: 4.7, category: "Audio", inStock: true, image: "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=500&q=80", features: ["H2 Chip", "Adaptive Audio", "MagSafe Case"] },
+            { id: 9, name: "Bose QuietComfort Ultra", price: 35900, origPrice: 39900, discount: 10, value: 92, rating: 4.7, category: "Audio", inStock: true, image: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=500&q=80", features: ["Immersive Audio", "CustomTune Tech", "Ultra Comfort"] },
+            { id: 10, name: "Apple Watch Ultra 2 GPS", price: 89900, origPrice: 89900, discount: 0, value: 92, rating: 4.8, category: "Wearables", inStock: true, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=500&q=80", features: ["3000 nits display", "49mm Titanium", "Dual-Freq GPS"] },
+            { id: 11, name: "Samsung Galaxy Watch 6 Classic", price: 28000, origPrice: 36000, discount: 22, value: 85, rating: 4.5, category: "Wearables", inStock: true, image: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=500&q=80", features: ["Rotating Bezel", "ECG & BIA Sensor", "Wear OS"] },
+            { id: 12, name: "Garmin Forerunner 965 AMOLED", price: 67990, origPrice: 72990, discount: 7, value: 89, rating: 4.7, category: "Wearables", inStock: true, image: "https://images.unsplash.com/photo-1510017803434-a899398421b3?auto=format&fit=crop&w=500&q=80", features: ["Titanium Bezel", "Full Color Maps", "23-day Battery"] },
+            { id: 13, name: "PlayStation 5 Slim Digital", price: 54990, origPrice: 54990, discount: 0, value: 96, rating: 4.9, category: "Gaming", inStock: true, image: "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=500&q=80", features: ["1TB Custom SSD", "4K 120Hz Output", "DualSense Haptics"] },
+            { id: 14, name: "Nintendo Switch OLED Model", price: 32000, origPrice: 36000, discount: 11, value: 92, rating: 4.8, category: "Gaming", inStock: true, image: "https://images.unsplash.com/photo-1578303512597-81e6cc155b3e?auto=format&fit=crop&w=500&q=80", features: ["7-inch OLED", "Enhanced Audio", "LAN Dock"] },
+            { id: 15, name: "Logitech G Pro X Superlight 2", price: 14995, origPrice: 16995, discount: 12, value: 88, rating: 4.6, category: "Gaming", inStock: true, image: "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?auto=format&fit=crop&w=500&q=80", features: ["60g Ultralight", "HERO 2 Sensor", "LIGHTSPEED Wireless"] },
+            { id: 16, name: "Canon EOS R6 Mark II Body", price: 215000, origPrice: 235000, discount: 8, value: 97, rating: 4.9, category: "Cameras", inStock: true, image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=500&q=80", features: ["24.2MP CMOS", "4K 60p Uncropped", "40 fps Burst"] },
+            { id: 17, name: "DJI Mini 4 Pro Fly More Combo", price: 115000, origPrice: 125000, discount: 8, value: 94, rating: 4.8, category: "Cameras", inStock: true, image: "https://images.unsplash.com/photo-1527977966376-1c8408f9f108?auto=format&fit=crop&w=500&q=80", features: ["Omni Obstacle Sensing", "4K/60fps HDR", "249g Ultralight"] },
+            { id: 18, name: "Fujifilm X100VI Digital Camera", price: 140000, origPrice: 140000, discount: 0, value: 93, rating: 4.8, category: "Cameras", inStock: false, image: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=500&q=80", features: ["40.2MP Sensor", "6.2K Video", "Classic Chrome Simulation"] },
+            { id: 19, name: "Philips Hue Starter Smart Kit", price: 12500, origPrice: 15999, discount: 21, value: 78, rating: 4.3, category: "Smart Home", inStock: true, image: "https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=500&q=80", features: ["16M Colors", "Bridge Included", "Voice Control"] },
+            { id: 20, name: "Amazon Echo Studio Smart Speaker", price: 22999, origPrice: 25999, discount: 11, value: 82, rating: 4.4, category: "Smart Home", inStock: true, image: "https://images.unsplash.com/photo-1543512214-318c7553f230?auto=format&fit=crop&w=500&q=80", features: ["Spatial Audio", "Dolby Atmos", "Built-in Zigbee Hub"] },
+            { id: 21, name: "Dyson V12 Detect Slim Vacuum", price: 45900, origPrice: 55900, discount: 18, value: 88, rating: 4.6, category: "Smart Home", inStock: true, image: "https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=500&q=80", features: ["Laser Illumination", "Piezo Sensor", "HEPA Filtration"] },
+            { id: 22, name: "ASUS ROG Swift 27\" 360Hz OLED", price: 89999, origPrice: 99999, discount: 10, value: 91, rating: 4.8, category: "Accessories", inStock: true, image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=500&q=80", features: ["0.03ms Response", "QHD Resolution", "Custom Heatsink"] },
+            { id: 23, name: "Keychron K2 Pro QMK Wireless", price: 9999, origPrice: 11999, discount: 16, value: 87, rating: 4.6, category: "Accessories", inStock: true, image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=500&q=80", features: ["PBT Keycaps", "Hot-swappable", "Bluetooth 5.1"] },
+            { id: 24, name: "Anker Prime 20,000mAh Power Bank", price: 12999, origPrice: 14999, discount: 13, value: 89, rating: 4.7, category: "Accessories", inStock: true, image: "https://images.unsplash.com/photo-1609592424009-84467f96b998?auto=format&fit=crop&w=500&q=80", features: ["200W Output", "Smart Display", "100W Recharging"] },
+            { id: 25, name: "iPad Air M2 11-inch 128GB", price: 59900, origPrice: 62900, discount: 5, value: 90, rating: 4.7, category: "Smartphones", inStock: true, image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=500&q=80", features: ["Apple M2 Chip", "Liquid Retina", "Apple Pencil Pro"] },
+            { id: 26, name: "JBL Charge 5 Waterproof Speaker", price: 14999, origPrice: 17999, discount: 16, value: 84, rating: 4.5, category: "Audio", inStock: true, image: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=500&q=80", features: ["20 Hours Playtime", "IP67 Waterproof", "PartyBoost"] },
+            { id: 27, name: "Samsung T7 Shield 2TB Portable SSD", price: 15999, origPrice: 19999, discount: 20, value: 90, rating: 4.8, category: "Accessories", inStock: true, image: "https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=500&q=80", features: ["1050 MB/s Speed", "IP65 Water/Dust", "Rugged Design"] },
+            { id: 28, name: "GoPro HERO12 Black Action Cam", price: 39900, origPrice: 45000, discount: 11, value: 86, rating: 4.4, category: "Cameras", inStock: true, image: "https://images.unsplash.com/photo-1565849904461-04a58ad377e0?auto=format&fit=crop&w=500&q=80", features: ["5.3K60 Video", "HyperSmooth 6.0", "HDR Photo+Video"] },
+            { id: 29, name: "Elgato Stream Deck MK.2", price: 13999, origPrice: 15999, discount: 12, value: 83, rating: 4.5, category: "Accessories", inStock: true, image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=500&q=80", features: ["15 LCD Keys", "Custom Layouts", "Plugin Store"] },
+            { id: 30, name: "LG C3 55\" 4K Smart OLED TV", price: 124990, origPrice: 149990, discount: 16, value: 96, rating: 4.9, category: "Smart Home", inStock: true, image: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=500&q=80", features: ["a9 AI Gen6 Processor", "120Hz Gaming", "Dolby Vision"] }
+        ];
+
+        // Global Application State
+        let products = JSON.parse(localStorage.getItem('smart_optimizer_products')) || [...defaultProducts];
+        let cart = JSON.parse(localStorage.getItem('smart_optimizer_cart')) || [];
+        let wishlist = JSON.parse(localStorage.getItem('smart_optimizer_wishlist')) || [];
+        let selectedProductIds = new Set();
+        let dpMatrixCache = null;
+        let appliedCoupon = null;
+        let speechRecognition = null;
+        let isListening = false;
+
+        // Initialize App on DOM Ready
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            updateBadges();
+            filterProducts();
+            renderCart();
+            renderWishlist();
+            renderFlashDeals();
+            getGeoLocation();
+            initSpeechRecognition();
+        });
+
+        // Toast Notification Helper
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        // Toggle Modal Visibility
+        function toggleModal(modalId) {
+            document.getElementById(modalId).classList.toggle('hidden');
+        }
+
+        // Switch Navigation Tabs
+        function switchTab(tabKey) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+            const targetBtn = document.getElementById(`tab-btn-${tabKey}`);
+            const targetContent = document.getElementById(`tab-content-${tabKey}`);
+
+            if (targetBtn) targetBtn.classList.add('active');
+            if (targetContent) targetContent.classList.remove('hidden');
+
+            if (tabKey === 'cart') renderCart();
+            if (tabKey === 'wishlist') renderWishlist();
+            if (tabKey === 'deals') renderFlashDeals();
+        }
+
+        // Update Badge Counters
+        function updateBadges() {
+            const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
+            document.getElementById('headerCartBadge').textContent = cartCount;
+            document.getElementById('tabCartCount').textContent = cartCount;
+
+            document.getElementById('headerWishlistBadge').textContent = wishlist.length;
+            document.getElementById('tabWishlistCount').textContent = wishlist.length;
+
+            document.getElementById('tabCatalogCount').textContent = products.length;
+        }
+
+        // Reset All Data
+        function resetData() {
+            products = [...defaultProducts];
+            cart = [];
+            wishlist = [];
+            selectedProductIds.clear();
+            appliedCoupon = null;
+            localStorage.removeItem('smart_optimizer_products');
+            localStorage.removeItem('smart_optimizer_cart');
+            localStorage.removeItem('smart_optimizer_wishlist');
+            
+            updateBadges();
+            filterProducts();
+            renderCart();
+            renderWishlist();
+            document.getElementById('resultsSection').classList.add('hidden');
+            showToast("Catalog, Cart & Wishlist reset to defaults!");
+        }
+
+        // HTML5 Geolocation with Reverse Geocoding Display
+        function getGeoLocation() {
+            const textDesktop = document.getElementById('headerLocationText');
+            const textMobile = document.getElementById('mobileLocationText');
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        const lat = position.coords.latitude.toFixed(2);
+                        const lon = position.coords.longitude.toFixed(2);
+                        const locString = `Hyderabad, TS (${lat}°, ${lon}°)`;
+                        textDesktop.textContent = locString;
+                        textMobile.textContent = locString;
+                        showToast("Location updated!");
+                    },
+                    error => {
+                        const fallback = "Hyderabad, Telangana - 500081";
+                        textDesktop.textContent = fallback;
+                        textMobile.textContent = fallback;
+                    }
+                );
+            } else {
+                const fallback = "Hyderabad, Telangana - 500081";
+                textDesktop.textContent = fallback;
+                textMobile.textContent = fallback;
+            }
+        }
+
+        // Web Speech API Voice Search Assistant
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                speechRecognition = new SpeechRecognition();
+                speechRecognition.continuous = false;
+                speechRecognition.interimResults = false;
+                speechRecognition.lang = 'en-US';
+
+                speechRecognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript.toLowerCase();
+                    document.getElementById('voiceStatusText').textContent = `Heard: "${transcript}"`;
+                    handleVoiceCommand(transcript);
+                    stopVoiceAssistant();
+                };
+
+                speechRecognition.onerror = (event) => {
+                    document.getElementById('voiceStatusText').textContent = "Could not recognize audio. Try again.";
+                    stopVoiceAssistant();
+                };
+            }
+        }
+
+        function toggleVoiceAssistant() {
+            if (!speechRecognition) {
+                showToast("Speech Recognition not supported in this browser.");
+                return;
+            }
+
+            const btn = document.getElementById('voiceSearchBtn');
+            const feedbackBar = document.getElementById('voiceFeedbackBar');
+
+            if (isListening) {
+                stopVoiceAssistant();
+            } else {
+                try {
+                    speechRecognition.start();
+                    isListening = true;
+                    btn.classList.add('mic-listening');
+                    feedbackBar.classList.remove('hidden');
+                    document.getElementById('voiceStatusText').textContent = "Listening... Speak command like 'Show laptops' or 'Optimize 50000'";
+                } catch(e) {
+                    console.log(e);
+                }
+            }
+        }
+
+        function stopVoiceAssistant() {
+            if (speechRecognition && isListening) {
+                speechRecognition.stop();
+                isListening = false;
+                document.getElementById('voiceSearchBtn').classList.remove('mic-listening');
+                setTimeout(() => {
+                    document.getElementById('voiceFeedbackBar').classList.add('hidden');
+                }, 2000);
+            }
+        }
+
+        function handleVoiceCommand(cmd) {
+            if (cmd.includes('laptop') || cmd.includes('phone') || cmd.includes('audio') || cmd.includes('watch') || cmd.includes('camera')) {
+                switchTab('catalog');
+                if (cmd.includes('laptop')) document.getElementById('categoryFilter').value = 'Laptops';
+                else if (cmd.includes('phone')) document.getElementById('categoryFilter').value = 'Smartphones';
+                else if (cmd.includes('audio')) document.getElementById('categoryFilter').value = 'Audio';
+                else if (cmd.includes('watch')) document.getElementById('categoryFilter').value = 'Wearables';
+                else if (cmd.includes('camera')) document.getElementById('categoryFilter').value = 'Cameras';
+                filterProducts();
+                showToast(`Voice Filtered: ${cmd}`);
+            } else if (cmd.includes('cart')) {
+                switchTab('cart');
+            } else if (cmd.includes('wishlist')) {
+                switchTab('wishlist');
+            } else if (cmd.includes('optimize') || cmd.includes('budget')) {
+                switchTab('optimizer');
+                const match = cmd.match(/\d+/);
+                if (match) {
+                    document.getElementById('budgetInput').value = match[0];
+                    optimizeShopping();
+                }
+            } else {
+                switchTab('catalog');
+                document.getElementById('searchInput').value = cmd;
+                filterProducts();
+                showToast(`Voice Search: "${cmd}"`);
+            }
+        }
+
+        // Filter and Sort Catalog Items
+        function filterProducts() {
+            const category = document.getElementById('categoryFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const sort = document.getElementById('sortCatalogSelect').value;
+
+            let filtered = products.filter(p => {
+                const matchCat = category === 'all' || p.category === category;
+                const matchSearch = p.name.toLowerCase().includes(search) || p.category.toLowerCase().includes(search);
+                return matchCat && matchSearch;
+            });
+
+            if (sort === 'priceLow') filtered.sort((a, b) => a.price - b.price);
+            else if (sort === 'priceHigh') filtered.sort((a, b) => b.price - a.price);
+            else if (sort === 'ratingHigh') filtered.sort((a, b) => b.rating - a.rating);
+            else if (sort === 'discountHigh') filtered.sort((a, b) => b.discount - a.discount);
+            else if (sort === 'valueHigh') filtered.sort((a, b) => b.value - a.value);
+
+            renderProducts(filtered);
+        }
+
+        // Render Product Cards
+        function renderProducts(items) {
+            const container = document.getElementById('productList');
+            container.innerHTML = '';
+
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200">
+                        <i data-lucide="package-open" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                        <p class="font-medium text-sm">No products matched your criteria.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            items.forEach(product => {
+                const isWishlisted = wishlist.some(w => w.id === product.id);
+                const isSelected = selectedProductIds.has(product.id);
+
+                const card = document.createElement('div');
+                card.className = `bg-white rounded-2xl border ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-slate-200/80'} p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group relative overflow-hidden`;
+                
+                card.innerHTML = `
+                    <div>
+                        <!-- Checkbox Overlay & Image -->
+                        <div class="relative h-44 rounded-xl overflow-hidden mb-3 bg-slate-100">
+                            <img src="${product.image}" alt="${product.name}" onerror="this.src='https://placehold.co/400x300/e2e8f0/475569?text=Product+Image'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                            
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleProductSelect(${product.id}, this.checked)" class="absolute top-2.5 left-2.5 w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer shadow-md">
+
+                            ${product.discount > 0 ? `<span class="absolute top-2.5 left-8 bg-amber-500 text-slate-900 text-[10px] font-black px-2 py-0.5 rounded shadow-md uppercase">${product.discount}% OFF</span>` : ''}
+
+                            <button onclick="toggleWishlist(${product.id})" class="absolute top-2.5 right-2.5 p-2 bg-white/90 backdrop-blur-md rounded-full shadow-md text-slate-600 hover:text-rose-500 transition-colors">
+                                <i data-lucide="heart" class="w-4 h-4 ${isWishlisted ? 'fill-rose-500 text-rose-500' : ''}"></i>
+                            </button>
+                        </div>
+
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600">${product.category}</span>
+                            <span class="text-xs font-bold text-amber-600 flex items-center gap-1">⭐ ${product.rating}</span>
+                        </div>
+
+                        <h3 class="font-bold text-slate-900 text-sm mb-1 line-clamp-1 hover:text-indigo-600 cursor-pointer" onclick="openQuickView(${product.id})">${product.name}</h3>
+
+                        <div class="flex items-baseline gap-2 mb-2">
+                            <span class="text-base font-extrabold text-slate-900">₹${product.price.toLocaleString()}</span>
+                            ${product.origPrice > product.price ? `<span class="text-xs text-slate-400 line-through">₹${product.origPrice.toLocaleString()}</span>` : ''}
+                        </div>
+
+                        <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 mb-3">
+                            <span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">Value Score: ${product.value}/100</span>
+                            <span class="${product.inStock ? 'text-emerald-600' : 'text-rose-500'} font-bold">${product.inStock ? 'In Stock' : 'Out of Stock'}</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-100 flex items-center gap-2">
+                        <button onclick="addToCart(${product.id})" ${!product.inStock ? 'disabled class="opacity-50 flex-1 py-2 bg-slate-300 text-slate-500 rounded-xl text-xs font-bold"' : 'class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1 shadow-sm"'}>
+                            <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i> Add to Cart
+                        </button>
+                        <button onclick="openQuickView(${product.id})" class="p-2 text-slate-500 hover:text-indigo-600 transition-colors rounded-lg hover:bg-slate-100" title="Quick View">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        function toggleProductSelect(id, checked) {
+            if (checked) selectedProductIds.add(id);
+            else selectedProductIds.delete(id);
+            filterProducts();
+        }
+
+        function toggleSelectAll(checkbox) {
+            if (checkbox.checked) {
+                products.forEach(p => selectedProductIds.add(p.id));
+            } else {
+                selectedProductIds.clear();
+            }
+            filterProducts();
+        }
+
+        function toggleWishlist(id) {
+            const index = wishlist.findIndex(w => w.id === id);
+            const item = products.find(p => p.id === id);
+
+            if (index >= 0) {
+                wishlist.splice(index, 1);
+                showToast(`Removed "${item.name}" from Wishlist`);
+            } else {
+                wishlist.push(item);
+                showToast(`Added "${item.name}" to Wishlist!`);
+            }
+
+            localStorage.setItem('smart_optimizer_wishlist', JSON.stringify(wishlist));
+            updateBadges();
+            filterProducts();
+            renderWishlist();
+        }
+
+        function addToCart(id) {
+            const product = products.find(p => p.id === id);
+            if (!product.inStock) {
+                showToast("Item is currently out of stock.");
+                return;
+            }
+
+            const existing = cart.find(c => c.id === id);
+
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+
+            localStorage.setItem('smart_optimizer_cart', JSON.stringify(cart));
+            updateBadges();
+            showToast(`Added "${product.name}" to Cart!`);
+        }
+
+        function updateCartQty(id, delta) {
+            const item = cart.find(c => c.id === id);
+            if (!item) return;
+
+            item.qty += delta;
+            if (item.qty <= 0) {
+                cart = cart.filter(c => c.id !== id);
+            }
+
+            localStorage.setItem('smart_optimizer_cart', JSON.stringify(cart));
+            updateBadges();
+            renderCart();
+        }
+
+        function clearCart() {
+            cart = [];
+            localStorage.setItem('smart_optimizer_cart', JSON.stringify(cart));
+            updateBadges();
+            renderCart();
+            showToast("Cart cleared!");
+        }
+
+        function applyCoupon() {
+            const code = document.getElementById('couponInput').value.trim().toUpperCase();
+            if (code === 'KNAPSACK15' || code === 'FESTIVE20' || code === 'SUPERDEAL10') {
+                appliedCoupon = code;
+                document.getElementById('couponAppliedBadge').classList.remove('hidden');
+                document.getElementById('activeCouponCode').textContent = code;
+                showToast(`Coupon ${code} applied successfully!`);
+                renderCart();
+            } else {
+                showToast("Invalid coupon code.");
+            }
+        }
+
+        function copyCoupon(code) {
+            document.getElementById('couponInput').value = code;
+            switchTab('cart');
+            applyCoupon();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cartItemsContainer');
+            container.innerHTML = '';
+
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="py-12 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <i data-lucide="shopping-cart" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                        <p class="font-medium text-sm">Your shopping cart is currently empty.</p>
+                        <button onclick="switchTab('catalog')" class="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold">Explore Catalog</button>
+                    </div>
+                `;
+                lucide.createIcons();
+                updateCartTotals(0);
+                return;
+            }
+
+            let subtotal = 0;
+
+            cart.forEach(item => {
+                const itemTotal = item.price * item.qty;
+                subtotal += itemTotal;
+
+                const row = document.createElement('div');
+                row.className = "flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl gap-4";
+                row.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <img src="${item.image}" alt="${item.name}" class="w-14 h-14 object-cover rounded-xl border border-slate-200 bg-white">
+                        <div>
+                            <h4 class="font-bold text-xs text-slate-900">${item.name}</h4>
+                            <span class="text-[11px] text-slate-500">Unit Price: ₹${item.price.toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between w-full sm:w-auto gap-6">
+                        <div class="flex items-center border border-slate-300 rounded-lg bg-white">
+                            <button onclick="updateCartQty(${item.id}, -1)" class="px-2.5 py-1 text-slate-600 hover:bg-slate-100 font-bold">-</button>
+                            <span class="px-3 text-xs font-bold text-slate-800">${item.qty}</span>
+                            <button onclick="updateCartQty(${item.id}, 1)" class="px-2.5 py-1 text-slate-600 hover:bg-slate-100 font-bold">+</button>
+                        </div>
+
+                        <div class="text-right">
+                            <span class="font-extrabold text-xs text-slate-900 block">₹${itemTotal.toLocaleString()}</span>
+                            <button onclick="updateCartQty(${item.id}, -${item.qty})" class="text-[10px] text-rose-600 hover:underline">Remove</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+
+            lucide.createIcons();
+            updateCartTotals(subtotal);
+        }
+
+        function updateCartTotals(subtotal) {
+            let discount = 0;
+            if (appliedCoupon === 'KNAPSACK15' && subtotal >= 10000) discount = Math.round(subtotal * 0.15);
+            else if (appliedCoupon === 'FESTIVE20') discount = 2000;
+            else if (appliedCoupon === 'SUPERDEAL10') discount = Math.round(subtotal * 0.10);
+
+            discount = Math.min(discount, subtotal);
+            const discountedSubtotal = subtotal - discount;
+            const tax = Math.round(discountedSubtotal * 0.18);
+            const total = discountedSubtotal + tax;
+
+            document.getElementById('cartSubtotal').textContent = `₹${subtotal.toLocaleString()}`;
+            
+            if (discount > 0) {
+                document.getElementById('cartDiscountRow').classList.remove('hidden');
+                document.getElementById('cartDiscountAmount').textContent = `-₹${discount.toLocaleString()}`;
+            } else {
+                document.getElementById('cartDiscountRow').classList.add('hidden');
+            }
+
+            document.getElementById('cartTax').textContent = `₹${tax.toLocaleString()}`;
+            document.getElementById('cartTotal').textContent = `₹${total.toLocaleString()}`;
+        }
+
+        function renderWishlist() {
+            const container = document.getElementById('wishlistContainer');
+            container.innerHTML = '';
+
+            if (wishlist.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <i data-lucide="heart" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                        <p class="font-medium text-sm">No items in your wishlist.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            wishlist.forEach(product => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm flex flex-col justify-between";
+                card.innerHTML = `
+                    <div>
+                        <div class="h-36 rounded-xl overflow-hidden mb-3 bg-slate-100">
+                            <img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover">
+                        </div>
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600">${product.category}</span>
+                        <h3 class="font-bold text-slate-900 text-sm mb-1">${product.name}</h3>
+                        <p class="text-xs font-extrabold text-slate-900 mb-3">₹${product.price.toLocaleString()}</p>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-100 flex gap-2">
+                        <button onclick="addToCart(${product.id})" class="flex-1 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500">Move to Cart</button>
+                        <button onclick="toggleWishlist(${product.id})" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        function renderFlashDeals() {
+            const container = document.getElementById('flashDealsContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const topDeals = [...products].sort((a, b) => b.discount - a.discount).slice(0, 4);
+
+            topDeals.forEach(deal => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between";
+                card.innerHTML = `
+                    <div>
+                        <div class="relative h-32 rounded-xl overflow-hidden mb-2 bg-slate-100">
+                            <img src="${deal.image}" class="w-full h-full object-cover">
+                            <span class="absolute top-2 left-2 bg-amber-500 text-slate-900 text-[10px] font-black px-2 py-0.5 rounded">${deal.discount}% OFF</span>
+                        </div>
+                        <h4 class="font-bold text-xs text-slate-900 line-clamp-1">${deal.name}</h4>
+                        <div class="flex items-baseline gap-2 mt-1">
+                            <span class="font-extrabold text-sm text-slate-900">₹${deal.price.toLocaleString()}</span>
+                            <span class="text-[11px] text-slate-400 line-through">₹${deal.origPrice.toLocaleString()}</span>
+                        </div>
+                    </div>
+                    <button onclick="addToCart(${deal.id})" class="mt-3 w-full py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold">Claim Deal</button>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function moveWishlistToCart() {
+            if (wishlist.length === 0) return;
+            wishlist.forEach(item => {
+                const existing = cart.find(c => c.id === item.id);
+                if (existing) existing.qty += 1;
+                else cart.push({ ...item, qty: 1 });
+            });
+            wishlist = [];
+            localStorage.setItem('smart_optimizer_cart', JSON.stringify(cart));
+            localStorage.setItem('smart_optimizer_wishlist', JSON.stringify(wishlist));
+            updateBadges();
+            renderWishlist();
+            showToast("Moved all Wishlist items to Cart!");
+        }
+
+        function batchAction(action) {
+            if (selectedProductIds.size === 0) {
+                showToast("Please check at least one product checkbox.");
+                return;
+            }
+
+            selectedProductIds.forEach(id => {
+                if (action === 'cart') addToCart(id);
+                if (action === 'wishlist') {
+                    if (!wishlist.some(w => w.id === id)) {
+                        const item = products.find(p => p.id === id);
+                        wishlist.push(item);
+                    }
+                }
+            });
+
+            selectedProductIds.clear();
+            updateBadges();
+            filterProducts();
+            showToast(`Batch operation (${action}) completed!`);
+        }
+
+        function openQuickView(id) {
+            const product = products.find(p => p.id === id);
+            const container = document.getElementById('quickviewContent');
+
+            container.innerHTML = `
+                <div class="h-64 rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover">
+                </div>
+                <div class="space-y-3 flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] font-extrabold uppercase text-indigo-600">${product.category}</span>
+                        <h3 class="text-lg font-bold text-slate-900">${product.name}</h3>
+                        <div class="flex items-center gap-2 text-xs font-bold text-amber-600 mt-1">⭐ ${product.rating} / 5.0</div>
+
+                        <div class="flex items-baseline gap-2 mt-3">
+                            <span class="text-2xl font-black text-slate-900">₹${product.price.toLocaleString()}</span>
+                            ${product.origPrice > product.price ? `<span class="text-sm text-slate-400 line-through">₹${product.origPrice.toLocaleString()}</span>` : ''}
+                        </div>
+
+                        <div class="mt-3 space-y-1">
+                            <span class="text-xs font-bold text-slate-700 block">Key Features:</span>
+                            <ul class="text-xs text-slate-600 list-disc pl-4 space-y-0.5">
+                                ${product.features.map(f => `<li>${f}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 pt-2 border-t border-slate-100">
+                        <button onclick="addToCart(${product.id}); toggleModal('quickview-modal')" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold">Add to Cart</button>
+                        <button onclick="toggleWishlist(${product.id})" class="p-2.5 border border-slate-300 rounded-xl hover:bg-rose-50 text-rose-500"><i data-lucide="heart" class="w-4 h-4"></i></button>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+            toggleModal('quickview-modal');
+        }
+
+        // Checkout & UPI QR Code Generator
+        function openCheckoutModal() {
+            if (cart.length === 0) {
+                showToast("Your cart is empty!");
+                return;
+            }
+
+            const totalText = document.getElementById('cartTotal').textContent;
+            document.getElementById('checkoutPayableAmount').textContent = totalText;
+            document.getElementById('checkoutAddressText').textContent = document.getElementById('headerLocationText').textContent;
+            
+            document.getElementById('checkoutFormStep').classList.remove('hidden');
+            document.getElementById('upiQrScreen').classList.add('hidden');
+            toggleModal('checkout-modal');
+        }
+
+        function processPaymentStep() {
+            const paymentType = document.querySelector('input[name="paymentMethod"]:checked').value;
+
+            if (paymentType === 'upi') {
+                const totalText = document.getElementById('cartTotal').textContent;
+                const numericAmount = totalText.replace(/[^0-9]/g, '');
+
+                // Generate clean QuickChart QR API image URL for UPI payload
+                const upiPayload = `upi://pay?pa=smartbasket@upi&pn=SmartBasketPro&am=${numericAmount}&cu=INR`;
+                const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(upiPayload)}&size=200`;
+
+                document.getElementById('upiQrImg').src = qrUrl;
+                document.getElementById('qrAmountText').textContent = `Pay ${totalText}`;
+
+                document.getElementById('checkoutFormStep').classList.add('hidden');
+                document.getElementById('upiQrScreen').classList.remove('hidden');
+            } else {
+                simulateSuccessfulPayment();
+            }
+        }
+
+        function simulateSuccessfulPayment() {
+            showToast("Payment verified! Order placed successfully 🎉");
+            toggleModal('checkout-modal');
+            clearCart();
+        }
+
+        function setBudget(amount) {
+            document.getElementById('budgetInput').value = amount;
+            showToast(`Budget set to ₹${amount.toLocaleString()}`);
+        }
+
+        function handleAddProduct(e) {
+            e.preventDefault();
+            const newProduct = {
+                id: Date.now(),
+                name: document.getElementById('newProdName').value,
+                price: parseFloat(document.getElementById('newProdPrice').value),
+                origPrice: parseFloat(document.getElementById('newProdPrice').value),
+                discount: 0,
+                value: parseInt(document.getElementById('newProdValue').value),
+                rating: parseFloat(document.getElementById('newProdRating').value),
+                category: document.getElementById('newProdCategory').value,
+                inStock: true,
+                image: document.getElementById('newProdImg').value || "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=500&q=80",
+                features: ["Custom added product"]
+            };
+
+            products.push(newProduct);
+            localStorage.setItem('smart_optimizer_products', JSON.stringify(products));
+            filterProducts();
+            updateBadges();
+            toggleModal('add-product-modal');
+            document.getElementById('addProductForm').reset();
+            showToast(`Added "${newProduct.name}" to store catalog!`);
+        }
+
+        // 0/1 Dynamic Programming Knapsack Algorithm Engine
+        function optimizeShopping() {
+            const rawBudget = parseFloat(document.getElementById('budgetInput').value);
+            const strategy = document.getElementById('strategySelect').value;
+            const scope = document.getElementById('scopeSelect').value;
+
+            if (!rawBudget || rawBudget <= 0) {
+                showToast("Please enter a valid budget amount.");
+                return;
+            }
+
+            let pool = [...products];
+            if (scope === 'wishlist') pool = [...wishlist];
+            if (scope === 'selected') pool = products.filter(p => selectedProductIds.has(p.id));
+
+            if (pool.length === 0) {
+                showToast("No products found in chosen candidate item pool!");
+                return;
+            }
+
+            const items = pool.map(p => {
+                let weightVal = p.value;
+                if (strategy === 'rating') weightVal = Math.round(p.rating * 20);
+                if (strategy === 'quantity') weightVal = 1;
+                if (strategy === 'bangForBuck') weightVal = Math.round((p.value / p.price) * 10000);
+
+                return { ...p, calcValue: weightVal };
+            });
+
+            // Scale step factor for large currency limits
+            const SCALE = 1000;
+            const scaledBudget = Math.floor(rawBudget / SCALE);
+            const n = items.length;
+
+            const dp = Array.from({ length: n + 1 }, () => Array(scaledBudget + 1).fill(0));
+
+            for (let i = 1; i <= n; i++) {
+                const item = items[i - 1];
+                const scaledPrice = Math.max(1, Math.ceil(item.price / SCALE));
+
+                for (let w = 0; w <= scaledBudget; w++) {
+                    if (scaledPrice <= w) {
+                        dp[i][w] = Math.max(dp[i - 1][w], dp[i - 1][w - scaledPrice] + item.calcValue);
+                    } else {
+                        dp[i][w] = dp[i - 1][w];
+                    }
+                }
+            }
+
+            let selected = [];
+            let w = scaledBudget;
+            let pathSet = new Set();
+
+            for (let i = n; i > 0; i--) {
+                pathSet.add(`${i}-${w}`);
+                if (dp[i][w] !== dp[i - 1][w]) {
+                    const item = items[i - 1];
+                    selected.push(item);
+                    w -= Math.max(1, Math.ceil(item.price / SCALE));
+                }
+            }
+
+            dpMatrixCache = { dp, items, scaledBudget, SCALE, pathSet };
+            displayResults(selected, rawBudget, strategy, pool);
+        }
+
+        function displayResults(selectedItems, budget, strategy, pool) {
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.classList.remove('hidden');
+
+            const totalCost = selectedItems.reduce((acc, item) => acc + item.price, 0);
+            const totalValue = selectedItems.reduce((acc, item) => acc + item.value, 0);
+            const totalRating = selectedItems.reduce((acc, item) => acc + item.rating, 0).toFixed(1);
+            const remaining = budget - totalCost;
+
+            document.getElementById('metricCost').textContent = `₹${totalCost.toLocaleString()}`;
+            document.getElementById('metricBudgetUsage').textContent = `${Math.round((totalCost / budget) * 100)}% of target budget`;
+            
+            if (strategy === 'rating') {
+                document.getElementById('metricScore').textContent = totalRating;
+                document.getElementById('metricScoreType').textContent = "Total Rating Stars";
+            } else if (strategy === 'quantity') {
+                document.getElementById('metricScore').textContent = selectedItems.length;
+                document.getElementById('metricScoreType').textContent = "Total Items Count";
+            } else {
+                document.getElementById('metricScore').textContent = totalValue;
+                document.getElementById('metricScoreType').textContent = "Total Value Score";
+            }
+
+            document.getElementById('metricItemsCount').textContent = selectedItems.length;
+            document.getElementById('metricItemsTotal').textContent = `Out of ${pool.length} candidate products`;
+            document.getElementById('metricRemaining').textContent = `₹${remaining.toLocaleString()}`;
+
+            const costPct = Math.min(100, Math.round((totalCost / budget) * 100));
+            const remPct = Math.max(0, 100 - costPct);
+
+            document.getElementById('costProgressBar').style.width = `${costPct}%`;
+            document.getElementById('remProgressBar').style.width = `${remPct}%`;
+            document.getElementById('progressCostText').textContent = `₹${totalCost.toLocaleString()} (${costPct}%)`;
+            document.getElementById('progressRemText').textContent = `₹${remaining.toLocaleString()} (${remPct}%)`;
+
+            const catalogTotalValue = pool.reduce((acc, p) => acc + p.value, 0);
+            document.getElementById('totalCatalogValue').textContent = catalogTotalValue;
+            document.getElementById('capturedValue').textContent = `${Math.round((totalValue / (catalogTotalValue || 1)) * 100)}%`;
+
+            const selectedContainer = document.getElementById('selectedProductsContainer');
+            selectedContainer.innerHTML = '';
+
+            if (selectedItems.length === 0) {
+                selectedContainer.innerHTML = `
+                    <div class="py-8 text-center text-slate-400">
+                        <p class="text-xs">No items fit into this budget limit.</p>
+                    </div>
+                `;
+            } else {
+                selectedItems.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = "flex items-center justify-between p-3 bg-slate-50 border border-slate-200/80 rounded-xl hover:bg-indigo-50/40 transition-colors";
+                    el.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <img src="${item.image}" alt="${item.name}" class="w-10 h-10 object-cover rounded-lg border border-slate-200">
+                            <div>
+                                <h4 class="font-bold text-xs text-slate-900">${item.name}</h4>
+                                <div class="flex items-center gap-2 text-[10px] text-slate-500 mt-0.5">
+                                    <span>⭐ ${item.rating}</span>
+                                    <span>•</span>
+                                    <span class="text-indigo-600 font-semibold">Value: ${item.value}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-bold text-xs text-slate-900">₹${item.price.toLocaleString()}</span>
+                            <span class="block text-[10px] text-emerald-600 font-semibold">Selected</span>
+                        </div>
+                    `;
+                    selectedContainer.appendChild(el);
+                });
+            }
+
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+            showToast("Knapsack optimization calculated!");
+        }
+
+        function addAllOptimizedToCart() {
+            if (!dpMatrixCache) return;
+            const { items, dp, scaledBudget } = dpMatrixCache;
+            let w = scaledBudget;
+            let selected = [];
+
+            for (let i = items.length; i > 0; i--) {
+                if (dp[i][w] !== dp[i - 1][w]) {
+                    selected.push(items[i - 1]);
+                    w -= Math.max(1, Math.ceil(items[i - 1].price / dpMatrixCache.SCALE));
+                }
+            }
+
+            selected.forEach(item => addToCart(item.id));
+            switchTab('cart');
+            showToast("Added all optimized items to cart!");
+        }
+
+        function toggleDpMatrix() {
+            const container = document.getElementById('dpMatrixContainer');
+            const isHidden = container.classList.contains('hidden');
+            
+            if (isHidden) {
+                container.classList.remove('hidden');
+                document.getElementById('toggleDpBtnText').textContent = "Hide DP Table Matrix";
+                renderDpMatrix();
+            } else {
+                container.classList.add('hidden');
+                document.getElementById('toggleDpBtnText').textContent = "Show Dynamic Programming Matrix";
+            }
+        }
+
+        function renderDpMatrix() {
+            if (!dpMatrixCache) return;
+
+            const { dp, items, scaledBudget, pathSet } = dpMatrixCache;
+            const tableContainer = document.getElementById('dpMatrixTable');
+
+            let html = `<table class="text-xs border-collapse w-full"><thead><tr>`;
+            html += `<th class="p-2 border border-slate-800 bg-slate-950 text-slate-400 font-mono">Item \\ Capacity(w)</th>`;
+
+            for (let w = 0; w <= Math.min(scaledBudget, 25); w++) {
+                html += `<th class="p-2 border border-slate-800 bg-slate-950 text-slate-400 font-mono text-center">w=${w}</th>`;
+            }
+            html += `</tr></thead><tbody>`;
+
+            for (let i = 0; i <= items.length; i++) {
+                const itemName = i === 0 ? "Initial (0)" : items[i - 1].name;
+                html += `<tr>`;
+                html += `<td class="p-2 border border-slate-800 bg-slate-950 font-semibold text-slate-300 whitespace-nowrap">${itemName}</td>`;
+
+                for (let w = 0; w <= Math.min(scaledBudget, 25); w++) {
+                    const cellVal = dp[i][w];
+                    const isPath = pathSet.has(`${i}-${w}`);
+                    const highlightClass = isPath ? "bg-indigo-600 text-white font-bold dp-highlight" : "bg-slate-900 text-slate-400";
+
+                    html += `<td class="p-2 border border-slate-800 text-center font-mono dp-cell ${highlightClass}">${cellVal}</td>`;
+                }
+                html += `</tr>`;
+            }
+
+            html += `</tbody></table>`;
+            tableContainer.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
